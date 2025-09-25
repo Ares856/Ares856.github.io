@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ares Kombat. Return</title>
+<style>
+  body, html { margin:0; padding:0; font-family:Arial,sans-serif; background:#1a1a1a; color:#fff; height:100%; overflow:hidden; }
+  .header{text-align:center;padding:15px 0 5px 0;}
+  .game-title{font-size:36px;font-weight:bold;margin:0;}
+  .game-subtitle{font-size:32px;font-weight:bold;margin:0;}
+  .content{display:flex;flex-direction:column;justify-content:center;align-items:center;height:calc(100% - 120px);padding:10px;text-align:center;}
+  .section-title{font-size:28px;font-weight:bold;margin-bottom:10px;}
+  .score-display{font-size:36px;font-weight:bold;margin-bottom:30px;}
+  .bottom-menu{position:fixed;bottom:20px;left:0;width:100%;display:flex;justify-content:space-around;background:#111;padding:10px 0;}
+  .bottom-menu button{background:#333;border:none;padding:10px 20px;color:#fff;font-size:16px;border-radius:10px;cursor:pointer;}
+  .bottom-menu button.active{background:#ffcc00;color:#000;font-weight:bold;}
+  .hidden{display:none;}
+  .profile div{margin:5px 0;}
+  .profile button{padding:8px 16px;margin:5px;border:none;border-radius:10px;background:#555;color:#fff;font-size:14px;cursor:pointer;}
+  .button-main{font-size:30px;padding:20px 40px;border-radius:20px;background:#444;color:#fff;border:none;margin-top:10px;cursor:pointer;}
+  .button-main:active{background:#666;}
+  .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;justify-content:center;align-items:center;z-index:100;}
+  .modal-content{background:#222;padding:20px;border-radius:15px;text-align:center;width:90%;max-width:350px;}
+  .modal-content input{width:80%;padding:10px;margin:10px 0;border-radius:10px;border:none;text-align:center;}
+  .modal-content button{padding:10px 20px;border-radius:10px;border:none;background:#555;color:#fff;font-size:16px;margin-top:10px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="header">
+  <p class="game-title">Ares Kombat</p>
+  <p class="game-subtitle">Return</p>
+</div>
+
+<!-- Модалки -->
+<div id="registerModal" class="modal">
+  <div class="modal-content">
+    <h2>Регистрация</h2>
+    <p>Введите имя:</p>
+    <input type="text" id="nameInput" placeholder="Ваше имя">
+    <p>Юзернейм (Telegram):</p>
+    <input type="text" id="usernameInput" placeholder="@username">
+    <button id="registerBtn">Зарегистрироваться</button>
+  </div>
+</div>
+
+<div id="messageModal" class="modal">
+  <div class="modal-content">
+    <p id="messageText"></p>
+    <button id="closeMessageBtn">Ок</button>
+  </div>
+</div>
+
+<div id="shopModal" class="modal">
+  <div class="modal-content" id="shopContent">
+    <h2>Магазин</h2>
+    <div id="shopItemsContainer"></div>
+    <div id="shopReceipt" class="hidden">
+      <p>Вы купили: <span id="receiptItem"></span></p>
+      <p>Цена: <span id="receiptPrice"></span> 🏆</p>
+      <input type="text" id="receiptCode" readonly>
+      <button id="copyReceiptBtn">Скопировать код и отправь пользователю @Fachionn_Connection_Bot</button>
+    </div>
+    <button id="closeShopBtn">Закрыть</button>
+  </div>
+</div>
+
+<div id="promoModal" class="modal">
+  <div class="modal-content">
+    <h2>Промокоды</h2>
+    <input type="text" id="promoInput" placeholder="Введите промокод">
+    <button id="applyPromoBtn">Активировать</button>
+    <button id="closePromoBtn">Закрыть</button>
+  </div>
+</div>
+
+<div id="onceModal" class="modal">
+  <div class="modal-content">
+    <h2>Раз в жизни!</h2>
+    <p>Нажмите, чтобы получить 1000 🏆</p>
+    <button id="claimOnceBtn">Забрать награду</button>
+  </div>
+</div>
+
+<div id="resetModal" class="modal">
+  <div class="modal-content">
+    <h2>Сброс аккаунта</h2>
+    <p>Вы действительно хотите удалить аккаунт? Все данные будут потеряны!</p>
+    <button id="confirmResetBtn">Да, сбросить</button>
+    <button id="cancelResetBtn">Отмена</button>
+  </div>
+</div>
+<!-- Контент -->
+<div class="content">
+  <div id="clickerView">
+    <div class="section-title">Кликер</div>
+    <div class="score-display">🏆: <span id="clickerScore">0</span></div>
+    <button class="button-main" id="clickerButton">👊 Нажми!</button>
+  </div>
+
+  <div id="classicView" class="hidden">
+    <h2>Классический заработок</h2>
+    <button class="button-main" id="earnButton">Забрать 5000 🏆</button>
+    <p>Следующая выдача через: <span id="earnTimer">0 ч</span></p>
+  </div>
+
+  <div id="profileView" class="hidden profile">
+    <div><b>Имя:</b> <span id="profileName"></span></div>
+    <div><b>Юзернейм:</b> <span id="profileUsername"></span></div>
+    <div><b>ID:</b> <span id="profileId"></span></div>
+    <hr>
+    <div><b>Баланс 🏆:</b> <span id="totalBalance">0</span></div>
+    <hr>
+    <button id="openShopBtn">Магазин</button>
+    <button id="openPromoBtn">Промокоды</button>
+    <button id="openResetBtn">Сбросить аккаунт</button>
+  </div>
+</div>
+
+<div class="bottom-menu">
+  <button id="tabClicker" class="active">Кликер</button>
+  <button id="tabClassic">Классика</button>
+  <button id="tabProfile">Профиль</button>
+</div>
+
+<script>
+// === Переменные ===
+let clickerScore = parseInt(localStorage.getItem("clickerScore")) || 0;
+let classicScore = parseInt(localStorage.getItem("classicScore")) || 0;
+let totalBalance = parseInt(localStorage.getItem("totalBalance")) || 0;
+let lastEarnTime = parseInt(localStorage.getItem("lastEarnTime")) || 0;
+let claimedOnce = localStorage.getItem("claimedOnce") === "true";
+let username = localStorage.getItem("username") || "";
+let name = localStorage.getItem("name") || "";
+let userId = localStorage.getItem("userId") || ("ID"+Math.floor(Math.random()*1000000));
+let clickTimestamps = [];
+let banEnd = parseInt(localStorage.getItem("banEnd")) || 0;
+
+// === Инициализация ===
+document.getElementById("clickerScore").textContent = clickerScore;
+document.getElementById("totalBalance").textContent = totalBalance;
+
+if (!username || !name) document.getElementById("registerModal").style.display = "flex";
+
+document.getElementById("registerBtn").onclick = function() {
+  let n = document.getElementById("nameInput").value.trim();
+  let u = document.getElementById("usernameInput").value.trim();
+  if (!n || !u) return;
+  name = n; username = u;
+  localStorage.setItem("name", name);
+  localStorage.setItem("username", username);
+  localStorage.setItem("userId", userId);
+  document.getElementById("profileName").textContent = name;
+  document.getElementById("profileUsername").textContent = username;
+  document.getElementById("profileId").textContent = userId;
+  document.getElementById("registerModal").style.display = "none";
+};
+
+document.getElementById("profileName").textContent = name;
+document.getElementById("profileUsername").textContent = username;
+document.getElementById("profileId").textContent = userId;
+
+// === Обновление баланса ===
+function updateTotal() {
+  totalBalance = clickerScore + classicScore;
+  document.getElementById("totalBalance").textContent = totalBalance;
+  localStorage.setItem("clickerScore", clickerScore);
+  localStorage.setItem("classicScore", classicScore);
+  localStorage.setItem("totalBalance", totalBalance);
+}
+
+// === Сообщения ===
+function showMessage(text){
+  document.getElementById("messageText").textContent=text;
+  document.getElementById("messageModal").style.display="flex";
+}
+document.getElementById("closeMessageBtn").onclick=()=>document.getElementById("messageModal").style.display="none";
+
+// === Кликер с антиавтокликом и баном на 3 дня ===
+document.getElementById("clickerButton").onclick = function() {
+  let now = Date.now();
+
+  if (banEnd && now < banEnd) {
+    let diff = banEnd - now;
+    let d = Math.floor(diff/86400000);
+    let h = Math.floor((diff%86400000)/3600000);
+    let m = Math.floor((diff%3600000)/60000);
+showMessage(Вы забанены за автоклик! Осталось: ${d} д ${h} ч ${m} м);
+    return;
+  } else if (banEnd && now >= banEnd) {
+    ["clickerScore","classicScore","totalBalance","lastEarnTime","claimedOnce","usedPromos","banEnd"].forEach(k=>localStorage.removeItem(k));
+    location.reload();
+    return;
+  }
+
+  clickTimestamps = clickTimestamps.filter(t => now - t < 1000);
+  clickTimestamps.push(now);
+  if (clickTimestamps.length > 10) {
+    banEnd = now + 3*24*3600000;
+    localStorage.setItem("banEnd", banEnd);
+    showMessage("Автоклик обнаружен! Аккаунт заблокирован на 3 дня.");
+    return;
+  }
+
+  clickerScore++;
+  document.getElementById("clickerScore").textContent = clickerScore;
+  updateTotal();
+};
+
+// === Классический заработок (каждые 6 часов) ===
+document.getElementById("earnButton").onclick = function() {
+  let now = Date.now();
+  if (banEnd && now < banEnd) { showMessage("Вы забанены! Не можете использовать игру."); return; }
+
+  if (now - lastEarnTime >= 21600000) {
+    classicScore += 5000;
+    lastEarnTime = now;
+    localStorage.setItem("lastEarnTime", lastEarnTime);
+    updateTotal();
+    showMessage("Вы получили 5000 🏆!");
+  } else showMessage("Слишком рано! Ждите окончания таймера.");
+};
+
+function updateTimer() {
+  let now = Date.now();
+  let diff = 21600000 - (now - lastEarnTime);
+  if (diff < 0) diff = 0;
+  let h = Math.floor(diff/3600000);
+  let m = Math.floor((diff%3600000)/60000);
+  document.getElementById("earnTimer").textContent = h + " ч " + m + " м";
+}
+setInterval(updateTimer,1000);
+updateTimer();
+
+// === Бонус 1000 раз в жизни ===
+if (!claimedOnce) {
+  let btn = document.createElement("button");
+  btn.textContent = "1000 🏆 Бонус";
+  btn.id = "openOnceBtn";
+  document.getElementById("profileView").appendChild(btn);
+  btn.onclick = ()=>document.getElementById("onceModal").style.display="flex";
+
+  document.getElementById("claimOnceBtn").onclick = function() {
+    if (banEnd && Date.now() < banEnd) { showMessage("Вы забанены! Не можете получить бонус."); return; }
+    clickerScore += 1000;
+    updateTotal();
+    claimedOnce = true;
+    localStorage.setItem("claimedOnce","true");
+    let button = document.getElementById("openOnceBtn");
+    if(button){button.style.transition="opacity 1s, transform 1s"; button.style.opacity="0"; button.style.transform="scale(0.5) rotate(45deg)"; setTimeout(()=>button.remove(),1000);}
+    document.getElementById("onceModal").style.display="none";
+  };
+}
+
+// === Магазин ===
+let shopItems = [
+  {name:"Аватарка от ИИ", price:35000, code:"AOI"},
+  {name:"Аватарка на заказ", price:50000, code:"AOINZ"},
+  {name:"Обои", price:20000, code:"ONT"}
+];
+let shopContainer = document.getElementById("shopItemsContainer");
+shopItems.forEach(item=>{
+  let b=document.createElement("button");
+  b.textContent=${item.name} - ${item.price} 🏆;
+  b.onclick=function(){
+    if(banEnd && Date.now() < banEnd){showMessage("Вы забанены! Не можете использовать магазин."); return;}
+    if(totalBalance>=item.price){
+      clickerScore-=item.price;
+      updateTotal();
+      let code=item.code+"-"+Math.floor(Math.random()*1000000);
+      document.getElementById("receiptItem").textContent=item.name;
+      document.getElementById("receiptPrice").textContent=item.price;
+      document.getElementById("receiptCode").value=code;
+      document.getElementById("shopReceipt").classList.remove("hidden");
+      showMessage("Вы успешно купили "+item.name+"!");
+      document.getElementById("shopModal").style.display="none";
+    } else showMessage("Недостаточно 🏆!");
+  };
+  shopContainer.appendChild(b);
+});
+
+document.getElementById("copyReceiptBtn").onclick=function(){
+  let input=document.getElementById("receiptCode");
+  input.select();
+  document.execCommand("copy");
+  showMessage("Код скопирован!");
+};
+document.getElementById("openShopBtn").onclick=()=>document.getElementById("shopModal").style.display="flex";
+document.getElementById("closeShopBtn").onclick=()=>document.getElementById("shopModal").style.display="none";
+// === Промокоды ===
+let promoCodes = {
+  "AKTEST6":1000000,
+  "ARESKOMBATVOICE":20000,
+  "ARESKOMBAT00001":3000,
+  "ARESKOMBAT00002":5000,
+  "ARESKOMPREM0001":7000
+};
+let usedPromos = JSON.parse(localStorage.getItem("usedPromos")||"[]");
+
+document.getElementById("applyPromoBtn").onclick=function(){
+  let code=document.getElementById("promoInput").value.trim();
+  if(banEnd && Date.now() < banEnd){showMessage("Вы забанены! Не можете использовать промокоды."); return;}
+  if(promoCodes[code]&&!usedPromos.includes(code)){
+    clickerScore+=promoCodes[code];
+    updateTotal();
+    usedPromos.push(code);
+    localStorage.setItem("usedPromos",JSON.stringify(usedPromos));
+    showMessage("Промокод активирован! +" + promoCodes[code] + " 🏆");
+    document.getElementById("promoModal").style.display="none";
+  } else showMessage("Неверный или уже использован.");
+};
+document.getElementById("openPromoBtn").onclick=()=>document.getElementById("promoModal").style.display="flex";
+document.getElementById("closePromoBtn").onclick=()=>document.getElementById("promoModal").style.display="none";
+
+// === Сброс аккаунта ===
+document.getElementById("openResetBtn").onclick=()=>document.getElementById("resetModal").style.display="flex";
+document.getElementById("confirmResetBtn").onclick=function(){localStorage.clear();location.reload();};
+document.getElementById("cancelResetBtn").onclick=()=>document.getElementById("resetModal").style.display="none";
+
+// === Навигация ===
+function showView(v){
+  document.getElementById("clickerView").classList.add("hidden");
+  document.getElementById("classicView").classList.add("hidden");
+  document.getElementById("profileView").classList.add("hidden");
+  document.getElementById(v).classList.remove("hidden");
+  document.getElementById("tabClicker").classList.remove("active");
+  document.getElementById("tabClassic").classList.remove("active");
+  document.getElementById("tabProfile").classList.remove("active");
+  if(v==="clickerView")document.getElementById("tabClicker").classList.add("active");
+  if(v==="classicView")document.getElementById("tabClassic").classList.add("active");
+  if(v==="profileView")document.getElementById("tabProfile").classList.add("active");
+}
+
+document.getElementById("tabClicker").onclick=()=>showView("clickerView");
+document.getElementById("tabClassic").onclick=()=>showView("classicView");
+document.getElementById("tabProfile").onclick=()=>showView("profileView");
+</script>
+</body>
+</html>
